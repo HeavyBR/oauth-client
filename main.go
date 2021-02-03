@@ -3,19 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/oauth-client/pkg/client"
+	"golang.org/x/net/context"
 	"log"
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/coreos/go-oidc/v3/oidc"
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
 )
-
-
 
 func main() {
 	ctx := context.Background()
@@ -25,32 +22,19 @@ func main() {
 	setupEnvironment()
 
 	var (
-		clientID     = os.Getenv("GOOGLE_CLIENT_ID")
-		clientSecret = os.Getenv("GOOGLE_CLIENT_SECRET")
-		providerURL = os.Getenv("GOOGLE_PROVIDER_URL")
+		clientID     = os.Getenv("OAUTH0_CLIENT_ID")
+		clientSecret = os.Getenv("OAUTH0_CLIENT_SECRET")
+		providerURL  = os.Getenv("OAUTH0_PROVIDER_URL")
 	)
 
-	provider, err := oidc.NewProvider(ctx, providerURL)
+
+	verifier, config, err := client.GetOpenIDClient(ctx, clientID, clientSecret, providerURL)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
 
-	oidcConfig := &oidc.Config{
-		ClientID: clientID,
-	}
-
-	verifier := provider.Verifier(oidcConfig)
-
-	config := oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		Endpoint:     provider.Endpoint(),
-		RedirectURL:  "http://127.0.0.1:8000/auth/google/callback",
-		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
-	}
-
-	state := "sensedia_example"
+	state := uuid.NewString()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, config.AuthCodeURL(state), http.StatusFound)
