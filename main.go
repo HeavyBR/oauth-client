@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/heavybr/oauth-client/pkg/client"
+	"github.com/heavybr/oauth-client/pkg/routes"
 	"github.com/joho/godotenv"
-	"github.com/oauth-client/pkg/client"
 	"golang.org/x/net/context"
 	"log"
 	"net/http"
@@ -21,11 +23,24 @@ func main() {
 
 	setupEnvironment()
 
-	var (
+	var clientID, clientSecret, providerURL string
+
+	provider := flag.String("provider", "", "use oauth0 or google as provider")
+	flag.Parse()
+
+	if *provider == "oauth0" {
 		clientID     = os.Getenv("OAUTH0_CLIENT_ID")
 		clientSecret = os.Getenv("OAUTH0_CLIENT_SECRET")
 		providerURL  = os.Getenv("OAUTH0_PROVIDER_URL")
-	)
+
+	} else if *provider == "google" {
+		clientID     = os.Getenv("GOOGLE_CLIENT_ID")
+		clientSecret = os.Getenv("GOOGLE_CLIENT_SECRET")
+		providerURL  = os.Getenv("GOOGLE_PROVIDER_URL")
+
+	} else {
+		log.Fatal("choose between google or oauth0")
+	}
 
 
 	verifier, config, err := client.GetOpenIDClient(ctx, clientID, clientSecret, providerURL)
@@ -40,7 +55,7 @@ func main() {
 		http.Redirect(w, r, config.AuthCodeURL(state), http.StatusFound)
 	})
 
-	r.HandleFunc("/auth/google/callback", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("state") != state {
 			http.Error(w, "state did not match", http.StatusBadRequest)
 			return
@@ -113,12 +128,10 @@ func main() {
 			return
 		}
 		_, _ = w.Write(data)
-
-
-
-
 	}).Methods("POST")
 
+
+	r.HandleFunc("/auth/logout", routes.LogoutHandler).Methods("GET")
 
 
 	log.Printf("listening on http://%s/", "127.0.0.1:8000")

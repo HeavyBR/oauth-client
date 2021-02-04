@@ -25,7 +25,7 @@ func GetOpenIDClient(ctx context.Context, clientID, clientSecret, providerURL st
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Endpoint:     provider.Endpoint(),
-		RedirectURL:  "http://127.0.0.1:8000/auth/google/callback",
+		RedirectURL:  "http://127.0.0.1:8000/auth/callback",
 		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
 	}
 
